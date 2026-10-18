@@ -126,13 +126,33 @@ Get an API key at [e2b.dev/dashboard](https://e2b.dev/dashboard) and either set 
 
 Each sandbox gets a dedicated Pod in a Kubernetes cluster, managed by the provisioner service. This provides the strongest isolation and is recommended for production environments with multiple concurrent users.
 
+The provisioner requires a nonempty shared API key. Set `PROVISIONER_API_KEY` in
+the provisioner service's environment and expose the same value to the Gateway,
+which resolves the environment-variable reference below:
+
 ```yaml
 sandbox:
   use: deerflow.community.aio_sandbox:AioSandboxProvider
   provisioner_url: http://provisioner:8002
+  provisioner_api_key: $PROVISIONER_API_KEY
 ```
 
 The provisioner service is included in `docker/docker-compose-dev.yaml` and manages the Pod and Service lifecycle for each sandbox ID.
+
+For the Docker development stack, generate a strong random key and replace the
+placeholder below. From the repository root, export it in the same shell before
+starting the services so Compose passes it to both containers:
+
+```bash
+export PROVISIONER_API_KEY='<your-generated-shared-secret>'
+make docker-start
+```
+
+For other deployments, configure the shared key in both services' deployment
+environments. Restart or recreate the affected services after changing it; a
+host-shell export does not update an already-running container or remote service.
+An unset or mismatched key causes `/api/*` requests to return `401 Unauthorized`,
+even when the unauthenticated `/health` endpoint succeeds.
 
 ## Path mappings
 

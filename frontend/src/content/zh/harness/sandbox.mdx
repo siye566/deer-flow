@@ -117,11 +117,27 @@ sandbox:
 
 每个沙箱在 Kubernetes 集群中获得一个专用 Pod，由 Provisioner 服务管理。这提供最强的隔离性，适合有多个并发用户的生产环境。
 
+Provisioner 要求设置非空的共享 API Key。在 Provisioner 服务的环境中设置
+`PROVISIONER_API_KEY`，并向 Gateway 提供相同的值，由 Gateway
+解析下方的环境变量引用：
+
 ```yaml
 sandbox:
   use: deerflow.community.aio_sandbox:AioSandboxProvider
   provisioner_url: http://provisioner:8002
+  provisioner_api_key: $PROVISIONER_API_KEY
 ```
+
+对于 Docker 开发环境，先生成高强度随机密钥并替换下面的占位符。然后在仓库根目录的同一终端中，先导出变量再启动服务，使 Compose 将其传入两个容器：
+
+```bash
+export PROVISIONER_API_KEY='<your-generated-shared-secret>'
+make docker-start
+```
+
+其他部署方式需要在两个服务各自的部署环境中配置相同的共享密钥。修改后应重启或重建相关服务；仅在本地终端导出变量，不会更新已经运行的容器或远程服务。
+密钥未设置或不匹配时，`/api/*` 请求会返回 `401 Unauthorized`，即使无需认证的
+`/health` 端点仍然能正常访问。
 
 ## 路径映射
 
